@@ -1,0 +1,155 @@
+Sys.java:
+import java.io.*; 
+import java.util.*; 
+public class Sys {
+
+    private Double[][] coef;
+    private Double[][] sols;
+    private Double[][] rowReduction;
+    private int n;
+    
+    public Sys (Equation[] e, int n) {
+        this.n = n;
+        double[][] coef = new double[n][n];
+        double[][] sols = new double[1][n];
+        for (int i = 0; i < n; i++) {
+            coef[i] = e[i].getCoefs();
+            sols[0][i] = e[i].getSol();
+        }
+
+        rowReduction = new Double[n][n+1];
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                rowReduction[i][j] = coef[i][j];
+            }
+        }
+        for (int i = 0; i < n; i++) {
+            rowReduction[i][n] = sols[0][i];
+        }
+    }
+    
+    public Double[][] getRR() {
+        return rowReduction;
+    }
+
+    public double[] solver () {
+        Double[][] rr = rowReduce(); 
+        double[] varValues = new double[n];
+        for (int i = 0; i < n; i++) {
+            varValues[i] = rowReduction[i][n];
+        }
+        return varValues;
+    }
+    
+    public Double[][] rowReduce () {
+        double[] colVals = new double[n];
+        double[] tempVals = new double[n+1];
+        double scaleF;
+        double tempVal;
+        int inc;
+        for (int i = 0; i < n; i++) {
+            // scale down first row 
+            scaleF = rowReduction[i][i];
+            inc = 1;
+            while (scaleF == 0) {
+                for (int j = 0; j < n+1; j++) {
+                    tempVals[j] = rowReduction[i][j];
+                }
+                for (int j = 0; j < n+1; j++) {
+                    rowReduction[i][j] = rowReduction[i+inc][j];
+                }
+                for (int j = 0; j < n+1; j++) {
+                    rowReduction[i+inc][j] = tempVals[j];
+                }
+                scaleF = rowReduction[i][i];
+                inc += 1;
+            }
+            for (int j = i; j < n+1; j++) {
+                rowReduction[i][j] /= scaleF;
+            }
+            // for other rows
+            for (int j = 0; j < n; j++) {
+                if (j != i) {
+                    tempVal = rowReduction[j][i];
+                    for (int p = 0; p < n+1; p++) {
+                        // scale original
+                        tempVals[p] = rowReduction[i][p] * tempVal;
+                        // subtract and set difference equal to the original column
+                        rowReduction[j][p] -= tempVals[p];
+                    }
+                }
+            }
+        }
+        return rowReduction;
+    }
+}
+
+Equation.java:
+public class Equation {
+
+    private double[] coefs;
+    private double sol;
+    private int numVars;
+
+    public Equation (double[] coefs, double sol, int numVars)
+    {
+        this.coefs = coefs;
+        this.sol = sol;
+        this.numVars = numVars;
+    }
+
+    public double[] getCoefs () {
+        return coefs;
+    }
+
+    public double getSol() {
+        return sol;
+    } 
+
+    public int getN() {
+        return numVars;
+    }
+}
+
+SysDriver.java: 
+import java.io.*; 
+import java.util.*; 
+
+public class SysDriver {
+    public static void main(String [] args) {
+        
+        System.out.println(" | LINEAR SYSTEM OF EQUATION SOLVER | ");
+        System.out.println(" PRECONDITION: SYSTEM MUST BE SOLVABLE ");
+        Scanner scan = new Scanner(System.in);
+        System.out.println("How many variables/equations do you have?");
+        int n = scan.nextInt();
+        
+        double[] tempCoef = new double[n];
+        double tempSol;
+        Equation[] equations = new Equation[n];
+        Equation eq;
+        System.out.println("Enter equations in the form ax + by + cz + ... = C");
+        for (int i = 1; i <= n; i++) {
+            tempCoef = new  double[n];
+
+            System.out.println("Equation " + i + ": ");
+            for (int j = 0; j < n; j++) {
+                System.out.println("Variable " + (j+1) + " coefficient: ");
+                tempCoef[j] = scan.nextDouble();
+            }
+            System.out.println("Constant: ");
+            tempSol = scan.nextDouble();
+
+            equations[i-1] = new Equation(tempCoef, tempSol, n);
+        }
+        
+        Sys test = new Sys(equations, n);
+        double[] varValues = test.solver();
+        System.out.println("-------------");
+        System.out.println("Solution to linear system of equations:");
+        for (int i = 1; i <= n; i++) {
+            System.out.println("Variable " + i + ": " + Math.round(varValues[i-1] * 100) / 100.0);
+        }
+
+    }
+}
